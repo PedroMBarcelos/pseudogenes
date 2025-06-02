@@ -82,3 +82,6 @@ else
   echo "ERROR: makeblastdb command failed."
   exit 1
 fi
+
+
+nohup ncbi-blast-2.16.0+/bin/blastp -num_threads 4 -word_size 3 -gapopen 11 -gapextend 1 -matrix BLOSUM62 -threshold 13 -comp_based_stats 2 -seg yes -soft_masking true -lcase_masking -evalue 10 -max_target_seqs 1000000 -outfmt "6 qseqid qlen sseqid slen qstart qend sstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos qcovs qcovhsp" -query uniprot_sprot.fasta.gz -db uniprot_sprot_shuffle -out uniprot_sprot_shuffle.blastp.out &
