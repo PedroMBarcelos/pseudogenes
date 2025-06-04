@@ -1,0 +1,11 @@
+# Step 1: Ignore everything
+*
+
+# Step 2: BUT, do NOT ignore the .gitignore file itself!
+!.gitignore
+!.git
+# Step 3: Un-ignore specific files in the root directory
+!run_all.py
+!Python_translation.py
+!pipeline.md
+!README.md
