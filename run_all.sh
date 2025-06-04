@@ -3,16 +3,16 @@
 #!/bin/bash
 
 echo "Checking and downloading BLAST..."
-if [ ! -f ncbi-blast-2.15.0+-x64-linux.tar.gz ]; then
-    wget https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.15.0+-x64-linux.tar.gz
-    tar -xzf ncbi-blast-2.15.0+-x64-linux.tar.gz
+if [ ! -f ncbi-blast-2.16.0+-x64-linux.tar.gz ]; then
+    wget https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.16.0+-x64-linux.tar.gz
+    tar -xzf ncbi-blast-2.16.0+-x64-linux.tar.gz
 else
     echo "BLAST archive already exists. Skipping download."
 fi
 
 echo "Checking and downloading E. coli genome..."
-if [ ! -f GCF_037005845.1_ASM3700584v1_genomic.fna.gz ]; then
-    wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/037/005/845/GCF_037005845.1_ASM3700584v1/GCF_037005845.1_ASM3700584v1_genomic.fna.gz
+if [ ! -f GCF_000005845.2_ASM584v2_genomic.fna.gz ]; then
+    wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/005/845/GCF_000005845.2_ASM584v2/GCF_000005845.2_ASM584v2_genomic.fna.gz
 else
     echo "E. coli genome already exists. Skipping download."
 fi
@@ -35,7 +35,7 @@ BLAST_EXTRACTED_DIR="ncbi-blast-${BLAST_VERSION}"
 MAKEBLASTDB_EXEC="${BLAST_EXTRACTED_DIR}/bin/makeblastdb"
 
 # Input and output for makeblastdb (adjust these to your actual file names)
-INPUT_FASTA="uniprot_sprot.fasta.gz.shuffle" # Or "uniprot_sprot.fasta.gz.shuffle" if it's gzipped
+INPUT_FASTA="uniprot_sprot.fasta.gz.shuffle" 
 DB_NAME="uniprot_sprot_shuffle"
 DB_TYPE="prot"
 
@@ -84,4 +84,21 @@ else
 fi
 
 
-nohup ncbi-blast-2.16.0+/bin/blastp -num_threads 4 -word_size 3 -gapopen 11 -gapextend 1 -matrix BLOSUM62 -threshold 13 -comp_based_stats 2 -seg yes -soft_masking true -lcase_masking -evalue 10 -max_target_seqs 1000000 -outfmt "6 qseqid qlen sseqid slen qstart qend sstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos qcovs qcovhsp" -query uniprot_sprot.fasta.gz -db uniprot_sprot_shuffle -out uniprot_sprot_shuffle.blastp.out &
+nohup ncbi-blast-2.16.0+/bin/blastp \
+-num_threads 4 \
+-word_size 3 \
+-gapopen 11 \
+-gapextend 1 \
+-matrix BLOSUM62 \
+-threshold 13 \
+-comp_based_stats 2 \
+-seg yes \
+-soft_masking true \
+-lcase_masking \
+-evalue 10 \
+-max_target_seqs 1000000 \
+-outfmt "6 qseqid qlen sseqid slen qstart qend sstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos qcovs qcovhsp" \
+-query uniprot_sprot.fasta.gz \
+-db uniprot_sprot_shuffle \
+-out uniprot_sprot_shuffle.blastp.out &
+
