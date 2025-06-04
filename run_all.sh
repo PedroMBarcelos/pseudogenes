@@ -83,6 +83,11 @@ else
   exit 1
 fi
 
+echo "gunzip uniprot_sprot.fasta.gz..."
+
+gunzip uniprot_sprot.fasta.gz
+
+echo "Start bastp with nohup..."
 
 nohup ncbi-blast-2.16.0+/bin/blastp \
 -num_threads 4 \
@@ -98,7 +103,7 @@ nohup ncbi-blast-2.16.0+/bin/blastp \
 -evalue 10 \
 -max_target_seqs 1000000 \
 -outfmt "6 qseqid qlen sseqid slen qstart qend sstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos qcovs qcovhsp" \
--query uniprot_sprot.fasta.gz \
+-query uniprot_sprot.fasta \
 -db uniprot_sprot_shuffle \
 -out uniprot_sprot_shuffle.blastp.out &
 
