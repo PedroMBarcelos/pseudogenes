@@ -109,11 +109,45 @@ ncbi-blast-2.16.0+/bin/blastp \
 
 
 echo "Lowest E-Value in the Null Model..."
- awk '{print $13,$11}' uniprot_sprot_shuffle.blastp.out | LC_ALL=C sort -gr -k 2 | tail -n 1
+NULL_MODEL_EVALUE_THRESHOLD=awk '{print $13,$11}' uniprot_sprot_shuffle.blastp.out | LC_ALL=C sort -gr -k 2 | tail -n 1
 
-echo "Calculating E-Value and Bitscore threshhold..."
-python3 analise_ blast.py
+#echo "Calculating E-Value and Bitscore threshhold..."
 
+#ANALYSIS_OUTPUT=$(python3 analise_blast.py) # Capture all output
+
+#NULL_MODEL_BITSCORE_THRESHOLD=$(echo "${ANALYSIS_OUTPUT}" | grep "Bitscore threshold" | awk '{print $NF}')
+
+echo "Genome-Wide Homology-Based search..."
+
+if [ ! -f GCF_000005845.2_ASM584v2_genomic.fna ]; then
+    echo "Unzipping E. coli genome..."
+    gunzip -k GCF_000005845.2_ASM584v2_genomic.fna.gz # -k to keep original .gz
+fi
+
+"${MAKEBLASTDB_EXEC}" -in GCF_000005845.2_ASM584v2_genomic.fna -dbtype nucl -out ecolik12db 
+
+
+ncbi-blast-2.16.0+/bin/tblastn \
+-num_threads 4 \
+-word_size 3 \
+-gapopen 11 \
+-gapextend 1 \
+-matrix BLOSUM62 \
+-threshold 13 \
+-comp_based_stats 2 \
+-seg yes \
+-soft_masking true \
+-lcase_masking \
+-evalue 10 \
+-max_target_seqs 1000000 \
+-outfmt "6 qseqid qlen sseqid slen qstart qend sstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos sframe sstrand qcovs qcovhsp" \
+-query uniprot_sprot.fasta \
+-db ecolik12db \
+-out genome.tblastn.out
+
+
+
+#  
 
 
 
