@@ -89,7 +89,7 @@ gunzip uniprot_sprot.fasta.gz
 
 echo "Start bastp with nohup..."
 
-nohup ncbi-blast-2.16.0+/bin/blastp \
+ncbi-blast-2.16.0+/bin/blastp \
 -num_threads 4 \
 -word_size 3 \
 -gapopen 11 \
@@ -105,5 +105,16 @@ nohup ncbi-blast-2.16.0+/bin/blastp \
 -outfmt "6 qseqid qlen sseqid slen qstart qend sstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos qcovs qcovhsp" \
 -query uniprot_sprot.fasta \
 -db uniprot_sprot_shuffle \
--out uniprot_sprot_shuffle.blastp.out &
+-out uniprot_sprot_shuffle.blastp.out 
+
+
+echo "Lowest E-Value in the Null Model..."
+ awk '{print $13,$11}' uniprot_sprot_shuffle.blastp.out | LC_ALL=C sort -gr -k 2 | tail -n 1
+
+echo "Calculating E-Value and Bitscore threshhold..."
+python3 analise_ blast.py
+
+
+
+
 
