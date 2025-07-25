@@ -144,11 +144,6 @@ ncbi-blast-2.16.0+/bin/tblastn \
 -query uniprot_sprot.fasta \
 -db ecolik12db \
 -out genome.tblastn.out
-
-
-
-#  
-
-
+ 
 
 

@@ -6,7 +6,7 @@ import os
 def analyze_blast_output(file_path="uniprot_sprot_shuffle.blastp.out"):
     """
     Analyzes BLAST output to generate histograms for E-values and bitscores,
-    and calculates 1% significance thresholds.
+    and identifies the minimum E-value and maximum bitscore.
     The script will only proceed if the specified file_path exists.
 
     Args:
@@ -54,61 +54,66 @@ def analyze_blast_output(file_path="uniprot_sprot_shuffle.blastp.out"):
     # --- E-value Analysis ---
     print("\n--- E-value Analysis ---")
 
+    # --- THIS IS THE MODIFIED PART ---
+    # Find the minimum E-value in the entire dataset
+    min_evalue = df['evalue'].min()
+    print(f"Minimum E-value found in the null model: {min_evalue:.2e}")
+    # ---------------------------------
+
     # E-value Histogram
     plt.figure(figsize=(12, 7)) # Increased figure size
-    # Plotting non-zero E-values on a log scale for x-axis if there are any
     evalues_gt_zero = df['evalue'][df['evalue'] > 0]
     if not evalues_gt_zero.empty:
-        # Define bins for log scale, ensuring the max bin is at least 1.0 or the max evalue
-        min_val = max(1e-200, evalues_gt_zero.min()) # Avoid log(0) or negative if data is unusual
-        max_val = max(1.0, evalues_gt_zero.max())     # Ensure range goes at least to 1.0
-        if min_val >= max_val : # Handle cases where all positive evalues are the same or min_val is too large
-            max_val = min_val * 10 if min_val > 0 else 1.0 # Ensure max_val is greater than min_val
-            if min_val >= max_val: # if min_val was 0 and max_val became 1.0 but min_val is still higher
-                 min_val = max_val /100 if max_val > 0 else 1e-2 # ensure min_val is smaller
+        min_val = max(1e-200, evalues_gt_zero.min())
+        max_val = max(1.0, evalues_gt_zero.max())
+        if min_val >= max_val:
+            max_val = min_val * 10 if min_val > 0 else 1.0
+            if min_val >= max_val:
+                 min_val = max_val /100 if max_val > 0 else 1e-2
 
         bins = np.logspace(np.log10(min_val), np.log10(max_val), 50)
         
-        plt.hist(evalues_gt_zero, bins=bins, color='skyblue', edgecolor='black')
+        plt.hist(evalues_gt_zero, bins=bins, color='skyblue', edgecolor='black', label='E-value Frequency')
         plt.xscale('log')
-        plt.title('E-value Histogram (E-values > 0, log scale on X-axis)', fontsize=14)
-    else: # if all e-values are 0 or no positive values exist
+        plt.title('E-value Histogram of Null Model (E-values > 0, log scale on X-axis)', fontsize=14)
+
+        # --- THIS IS THE MODIFIED PART ---
+        # Add a vertical red dashed line at the minimum E-value
+        plt.axvline(x=min_evalue, color='red', linestyle='--', linewidth=2, 
+                    label=f'Minimum E-value ({min_evalue:.2e})')
+        plt.legend() # Display the legend to show the line's label
+        # ---------------------------------
+
+    else:
         num_zeros = len(df[df['evalue'] == 0])
-        plt.hist(df['evalue'], bins=10, color='skyblue', edgecolor='black') # Simple hist
+        plt.hist(df['evalue'], bins=10, color='skyblue', edgecolor='black')
         plt.title(f'E-value Histogram (all values; {num_zeros} are 0.0)', fontsize=14)
 
     plt.xlabel('E-value', fontsize=12)
     plt.ylabel('Frequency', fontsize=12)
     plt.grid(axis='y', alpha=0.75)
-    plt.tight_layout() # Adjust layout
+    plt.tight_layout()
     plt.savefig('evalue_histogram.png')
-    # plt.show() # Comment out if running in a non-GUI environment or to avoid display pop-ups
     print("E-value histogram saved as 'evalue_histogram.png'")
 
-    # Calculate 1% threshold for E-values (1st percentile)
-    # Lower E-values are better
-    evalue_threshold_1_percent = df['evalue'].quantile(0.01)
-    print(f"E-value threshold (1% of hits have E-value ≤ this value): {evalue_threshold_1_percent:.2e}")
 
     # --- Bitscore Analysis ---
     print("\n--- Bitscore Analysis ---")
 
     # Bitscore Histogram
-    plt.figure(figsize=(12, 7)) # Increased figure size
+    plt.figure(figsize=(12, 7))
     plt.hist(df['bitscore'], bins=50, color='lightgreen', edgecolor='black')
-    plt.title('Bitscore Histogram', fontsize=14)
+    plt.title('Bitscore Histogram of Null Model', fontsize=14)
     plt.xlabel('Bitscore', fontsize=12)
     plt.ylabel('Frequency', fontsize=12)
     plt.grid(axis='y', alpha=0.75)
-    plt.tight_layout() # Adjust layout
+    plt.tight_layout()
     plt.savefig('bitscore_histogram.png')
-    # plt.show() # Comment out if running in a non-GUI environment or to avoid display pop-ups
     print("Bitscore histogram saved as 'bitscore_histogram.png'")
 
-    # Calculate 1% threshold for Bitscores (99th percentile)
-    # Higher Bitscores are better
-    bitscore_threshold_1_percent = df['bitscore'].quantile(0.99)
-    print(f"Bitscore threshold (1% of hits have Bitscore ≥ this value): {bitscore_threshold_1_percent:.2f}")
+    # Calculate the maximum Bitscore
+    max_bitscore = df['bitscore'].max()
+    print(f"Maximum Bitscore found in the null model: {max_bitscore:.2f}")
 
 if __name__ == '__main__':
     analyze_blast_output(file_path="uniprot_sprot_shuffle.blastp.out")
