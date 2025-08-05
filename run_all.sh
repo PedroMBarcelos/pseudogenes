@@ -3,9 +3,9 @@
 #!/bin/bash
 
 echo "Checking and downloading BLAST..."
-if [ ! -f ncbi-blast-2.16.0+-x64-linux.tar.gz ]; then
-    wget https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.16.0+-x64-linux.tar.gz
-    tar -xzf ncbi-blast-2.16.0+-x64-linux.tar.gz
+if [ ! -f ncbi-blast-2.17.0+-x64-linux.tar.gz ]; then
+    wget https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.17.0+-x64-linux.tar.gz
+    tar -xzf ncbi-blast-2.17.0+-x64-linux.tar.gz
 else
     echo "BLAST archive already exists. Skipping download."
 fi
@@ -29,7 +29,7 @@ python3 Python_translation.py uniprot_sprot.fasta.gz
 
 echo "Running BLAST..."
 # --- Configuration ---
-BLAST_VERSION="2.16.0+" # Define the version you are using
+BLAST_VERSION="2.17.0+" # Define the version you are using
 BLAST_ARCHIVE_NAME="ncbi-blast-${BLAST_VERSION}-x64-linux.tar.gz"
 BLAST_EXTRACTED_DIR="ncbi-blast-${BLAST_VERSION}"
 MAKEBLASTDB_EXEC="${BLAST_EXTRACTED_DIR}/bin/makeblastdb"
@@ -89,7 +89,7 @@ gunzip uniprot_sprot.fasta.gz
 
 echo "Start bastp with nohup..."
 
-ncbi-blast-2.16.0+/bin/blastp \
+ncbi-blast-2.17.0+/bin/blastp \
 -num_threads 4 \
 -word_size 3 \
 -gapopen 11 \
@@ -127,7 +127,7 @@ fi
 "${MAKEBLASTDB_EXEC}" -in GCF_000005845.2_ASM584v2_genomic.fna -dbtype nucl -out ecolik12db 
 
 
-ncbi-blast-2.16.0+/bin/tblastn \
+ncbi-blast-2.17.0+/bin/tblastn \
 -num_threads 4 \
 -word_size 3 \
 -gapopen 11 \
@@ -140,6 +140,7 @@ ncbi-blast-2.16.0+/bin/tblastn \
 -lcase_masking \
 -evalue 10 \
 -max_target_seqs 1000000 \
+-dbsize 10000 \
 -outfmt "6 qseqid qlen sseqid slen qstart qend sstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos sframe sstrand qcovs qcovhsp" \
 -query uniprot_sprot.fasta \
 -db ecolik12db \
