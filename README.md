@@ -6,6 +6,9 @@ The pipeline.md file is the original code from Marcos, it has been updated to ge
 The code in perl has been translated to python in the Python_translation.py.
 
 # How to run?
-To execute the code you need to have Python_translation.py and run_all.sh in the folder.
-In the command line execute the run_all.sh file. 
+In the command line execute the run_all.sh file to run blastp and tblastn creating the NULL model 
+To run SSEARCH run ss_test3.sh 
+To finish run run_nextsteps.sh 
+
+This scripts will be put merged down the line  
 

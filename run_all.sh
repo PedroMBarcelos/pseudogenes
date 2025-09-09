@@ -1,18 +1,57 @@
 #!/bin/bash
 
-#!/bin/bash
+# Função para verificar se o arquivo existe e perguntar se deseja sobrescrever
+check_overwrite() {
+    FILE_TO_CHECK=$1
+    if [ -f "$FILE_TO_CHECK" ]; then
+        # Aguarda 3 minutos (180s) por uma resposta. Se não houver, continua.
+        read -t 180 -p "O arquivo '$FILE_TO_CHECK' já existe. Deseja sobrescrevê-lo? (y/n) [Padrão: y após 3 min] " -n 1 -r
+        read_exit_status=$?
+        echo
+
+        # Se o read estourou o tempo (exit status > 128) ou o usuário apenas apertou Enter, prossiga.
+        if [ $read_exit_status -ne 0 ]; then
+            echo "Nenhuma resposta recebida. Prosseguindo com a sobrescrita."
+            return 0 # Retorna 0 para indicar que pode continuar
+        fi
+
+        # Se o usuário respondeu, verifique a resposta.
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "Operação cancelada pelo usuário. Pulando esta etapa."
+            return 1 # Retorna 1 para indicar que não deve continuar
+        fi
+    fi
+    return 0 # Retorna 0 para indicar que pode continuar
+}
+
+
+# Pastas organizadas
+BLAST_DIR="BLAST"
+GENOME_DIR="genoma"
+RESULTS_DIR="resultados"
+
+# Set NUM_JOBS to be the total number of cores minus one.
+total_cores=$(nproc)
+if (( total_cores > 1 )); then
+    NUM_JOBS=$((total_cores - 1))
+else
+    NUM_JOBS=1
+fi
+echo "O numeros de threads disponíveis é "$NUM_JOBS""
+
+mkdir -p "$BLAST_DIR" "$GENOME_DIR" "$RESULTS_DIR"
 
 echo "Checking and downloading BLAST..."
-if [ ! -f ncbi-blast-2.17.0+-x64-linux.tar.gz ]; then
-    wget https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.17.0+-x64-linux.tar.gz
-    tar -xzf ncbi-blast-2.17.0+-x64-linux.tar.gz
+if [ ! -f "$BLAST_DIR/ncbi-blast-2.17.0+-x64-linux.tar.gz" ]; then
+    wget -O "$BLAST_DIR/ncbi-blast-2.17.0+-x64-linux.tar.gz" https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.17.0+-x64-linux.tar.gz
+    tar -xzf "$BLAST_DIR/ncbi-blast-2.17.0+-x64-linux.tar.gz" -C "$BLAST_DIR"
 else
     echo "BLAST archive already exists. Skipping download."
 fi
 
 echo "Checking and downloading E. coli genome..."
-if [ ! -f GCF_000005845.2_ASM584v2_genomic.fna.gz ]; then
-    wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/005/845/GCF_000005845.2_ASM584v2/GCF_000005845.2_ASM584v2_genomic.fna.gz
+if [ ! -f "$GENOME_DIR/GCF_000005845.2_ASM584v2_genomic.fna.gz" ]; then
+    wget -O "$GENOME_DIR/GCF_000005845.2_ASM584v2_genomic.fna.gz" https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/005/845/GCF_000005845.2_ASM584v2/GCF_000005845.2_ASM584v2_genomic.fna.gz
 else
     echo "E. coli genome already exists. Skipping download."
 fi
@@ -27,124 +66,140 @@ fi
 echo "Running Python script..."
 python3 Python_translation.py uniprot_sprot.fasta.gz
 
-echo "Running BLAST..."
-# --- Configuration ---
-BLAST_VERSION="2.17.0+" # Define the version you are using
-BLAST_ARCHIVE_NAME="ncbi-blast-${BLAST_VERSION}-x64-linux.tar.gz"
-BLAST_EXTRACTED_DIR="ncbi-blast-${BLAST_VERSION}"
+# Configuração dos caminhos dos executáveis
+BLAST_VERSION="2.17.0+"
+BLAST_EXTRACTED_DIR="$BLAST_DIR/ncbi-blast-${BLAST_VERSION}"
 MAKEBLASTDB_EXEC="${BLAST_EXTRACTED_DIR}/bin/makeblastdb"
+BLASTP_EXEC="${BLAST_EXTRACTED_DIR}/bin/blastp"
+TBLASTN_EXEC="${BLAST_EXTRACTED_DIR}/bin/tblastn"
 
-# Input and output for makeblastdb (adjust these to your actual file names)
-INPUT_FASTA="uniprot_sprot.fasta.gz.shuffle" 
-DB_NAME="uniprot_sprot_shuffle"
+# Input e output para makeblastdb
+INPUT_FASTA="uniprot_sprot.fasta.gz.shuffle"
+DB_NAME="${RESULTS_DIR}/uniprot_sprot_shuffle"
 DB_TYPE="prot"
 
-# --- Check for BLAST+ and extract if necessary ---
 echo "Checking for BLAST+ installation..."
-
 if [ ! -f "${MAKEBLASTDB_EXEC}" ]; then
-  echo "'${MAKEBLASTDB_EXEC}' not found."
-  if [ -f "${BLAST_ARCHIVE_NAME}" ]; then
-    echo "Found archive '${BLAST_ARCHIVE_NAME}'. Extracting..."
-    tar -zxvf "${BLAST_ARCHIVE_NAME}"
-    # Check if extraction was successful by looking for the executable again
-    if [ -f "${MAKEBLASTDB_EXEC}" ]; then
-      echo "BLAST+ extracted successfully."
+    echo "'${MAKEBLASTDB_EXEC}' not found."
+    if [ -f "$BLAST_DIR/ncbi-blast-${BLAST_VERSION}-x64-linux.tar.gz" ]; then
+        echo "Found archive. Extracting..."
+        tar -zxvf "$BLAST_DIR/ncbi-blast-${BLAST_VERSION}-x64-linux.tar.gz" -C "$BLAST_DIR"
+        if [ ! -f "${MAKEBLASTDB_EXEC}" ]; then
+            echo "ERROR: Failed to find '${MAKEBLASTDB_EXEC}' after extraction."
+            exit 1
+        fi
     else
-      echo "ERROR: Failed to find '${MAKEBLASTDB_EXEC}' after attempting extraction."
-      echo "Please check the archive and extraction process."
-      exit 1 # Exit the script if extraction failed
+        echo "ERROR: BLAST+ archive not found."
+        exit 1
     fi
-  else
-    echo "ERROR: BLAST+ archive '${BLAST_ARCHIVE_NAME}' not found in the current directory."
-    echo "Please download it or ensure it's in the correct location."
-    exit 1 # Exit the script if archive is missing
-  fi
 else
-  echo "BLAST+ executable '${MAKEBLASTDB_EXEC}' found. Skipping extraction."
+    echo "BLAST+ executable found. Skipping extraction."
 fi
 
-# --- Proceed with your pipeline steps ---
 echo "Proceeding to create BLAST database..."
-
-# Check if the input FASTA file exists
 if [ ! -f "${INPUT_FASTA}" ]; then
     echo "ERROR: Input FASTA file '${INPUT_FASTA}' not found!"
     exit 1
 fi
 
-# Now, run makeblastdb using the variable for the executable
-"${MAKEBLASTDB_EXEC}" -in "${INPUT_FASTA}" -dbtype "${DB_TYPE}" -out "${DB_NAME}"
+# Medir o tempo de criação do banco de dados UniProt
+start_time=$(date +%s)
 
-if [ $? -eq 0 ]; then
-  echo "BLAST database '${DB_NAME}' created successfully."
+if ! check_overwrite "${DB_NAME}.psq"; then
+    echo "Criação do banco de dados UniProt pulada."
 else
-  echo "ERROR: makeblastdb command failed."
-  exit 1
+    "${MAKEBLASTDB_EXEC}" -in "${INPUT_FASTA}" -dbtype "${DB_TYPE}" -out "${DB_NAME}"
+    if [ $? -eq 0 ]; then
+      echo "BLAST database '${DB_NAME}' created successfully."
+    else
+      echo "ERROR: makeblastdb command failed."
+      exit 1
+    fi
 fi
 
+end_time=$(date +%s)
+duration=$((end_time - start_time))
+echo "Criação do banco de dados UniProt concluída em $duration segundos."
+
 echo "gunzip uniprot_sprot.fasta.gz..."
+gunzip -f uniprot_sprot.fasta.gz
 
-gunzip uniprot_sprot.fasta.gz
+echo "Start blastp..."
+# Medir o tempo do blastp
+start_time=$(date +%s)
 
-echo "Start bastp with nohup..."
+if ! check_overwrite "${RESULTS_DIR}/uniprot_sprot_shuffle.blastp.out"; then
+    echo "Execução do BLASTP pulada."
+else
+    "${BLASTP_EXEC}" \
+    -num_threads $NUM_JOBS \
+    -word_size 3 \
+    -gapopen 11 \
+    -gapextend 1 \
+    -matrix BLOSUM62 \
+    -threshold 13 \
+    -comp_based_stats 2 \
+    -seg yes \
+    -soft_masking true \
+    -lcase_masking \
+    -evalue 10 \
+    -outfmt "6 qseqid qlen sseqid slen qstart qend sstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos qcovs qcovhsp" \
+    -query uniprot_sprot.fasta \
+    -db "${DB_NAME}" \
+    -out "${RESULTS_DIR}/uniprot_sprot_shuffle.blastp.out"
+fi
 
-ncbi-blast-2.17.0+/bin/blastp \
--num_threads 4 \
--word_size 3 \
--gapopen 11 \
--gapextend 1 \
--matrix BLOSUM62 \
--threshold 13 \
--comp_based_stats 2 \
--seg yes \
--soft_masking true \
--lcase_masking \
--evalue 10 \
--max_target_seqs 1000000 \
--outfmt "6 qseqid qlen sseqid slen qstart qend sstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos qcovs qcovhsp" \
--query uniprot_sprot.fasta \
--db uniprot_sprot_shuffle \
--out uniprot_sprot_shuffle.blastp.out 
+end_time=$(date +%s)
+duration=$((end_time - start_time))
+echo "BLASTP concluído em $duration segundos."
 
-
-echo "Lowest E-Value in the Null Model..."
-NULL_MODEL_EVALUE_THRESHOLD=awk '{print $13,$11}' uniprot_sprot_shuffle.blastp.out | LC_ALL=C sort -gr -k 2 | tail -n 1
-
-#echo "Calculating E-Value and Bitscore threshhold..."
-
-#ANALYSIS_OUTPUT=$(python3 analise_blast.py) # Capture all output
-
-#NULL_MODEL_BITSCORE_THRESHOLD=$(echo "${ANALYSIS_OUTPUT}" | grep "Bitscore threshold" | awk '{print $NF}')
 
 echo "Genome-Wide Homology-Based search..."
 
-if [ ! -f GCF_000005845.2_ASM584v2_genomic.fna ]; then
+if [ ! -f "$GENOME_DIR/GCF_000005845.2_ASM584v2_genomic.fna" ]; then
     echo "Unzipping E. coli genome..."
-    gunzip -k GCF_000005845.2_ASM584v2_genomic.fna.gz # -k to keep original .gz
+    gunzip -k "$GENOME_DIR/GCF_000005845.2_ASM584v2_genomic.fna.gz"
 fi
 
-"${MAKEBLASTDB_EXEC}" -in GCF_000005845.2_ASM584v2_genomic.fna -dbtype nucl -out ecolik12db 
+# Medir o tempo de criação do banco de dados do genoma
+start_time=$(date +%s)
 
+if ! check_overwrite "${RESULTS_DIR}/ecolik12db.nsq"; then
+    echo "Criação do banco de dados do genoma pulada."
+else
+    "${MAKEBLASTDB_EXEC}" -in "$GENOME_DIR/GCF_000005845.2_ASM584v2_genomic.fna" -dbtype nucl -out "${RESULTS_DIR}/ecolik12db"
+fi
 
-ncbi-blast-2.17.0+/bin/tblastn \
--num_threads 4 \
--word_size 3 \
--gapopen 11 \
--gapextend 1 \
--matrix BLOSUM62 \
--threshold 13 \
--comp_based_stats 2 \
--seg yes \
--soft_masking true \
--lcase_masking \
--evalue 10 \
--max_target_seqs 1000000 \
--dbsize 10000 \
--outfmt "6 qseqid qlen sseqid slen qstart qend sstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos sframe sstrand qcovs qcovhsp" \
--query uniprot_sprot.fasta \
--db ecolik12db \
--out genome.tblastn.out
- 
+end_time=$(date +%s)
+duration=$((end_time - start_time))
+echo "Criação do banco de dados do genoma concluída em $duration segundos."
 
+# Medir o tempo do tblastn
+start_time=$(date +%s)
 
+if ! check_overwrite "${RESULTS_DIR}/genome.tblastn.out"; then
+    echo "Execução do TBLASTN pulada."
+else
+    "${TBLASTN_EXEC}" \
+    -num_threads $NUM_JOBS \
+    -word_size 3 \
+    -gapopen 11 \
+    -gapextend 1 \
+    -matrix BLOSUM62 \
+    -threshold 13 \
+    -comp_based_stats 2 \
+    -seg yes \
+    -soft_masking true \
+    -lcase_masking \
+    -evalue 1 \
+    -max_target_seqs 1000000 \
+    -dbsize 10000 \
+    -outfmt "6 qseqid qlen sseqid slen qstart qend sstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos sframe sstrand qcovs qcovhsp" \
+    -query uniprot_sprot.fasta \
+    -db "${RESULTS_DIR}/ecolik12db" \
+    -out "${RESULTS_DIR}/genome.tblastn.out"
+fi
+
+end_time=$(date +%s)
+duration=$((end_time - start_time))
+echo "TBLASTN concluído em $duration segundos."

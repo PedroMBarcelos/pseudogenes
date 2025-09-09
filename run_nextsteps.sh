@@ -87,9 +87,9 @@ echo "INFO: Created merged regions file: $BED_MERGED"
 
 
 # ==============================================================================
-# STEP 4: Run advanced analysis with Python
+# STEP 4: Run analysis with Python
 # ==============================================================================
-echo "STEP 4: Starting advanced analysis with Python script..."
+echo "STEP 4: Starting analysis with Python script..."
 if [ ! -f "$PYTHON_SCRIPT" ]; then
     echo "ERROR: The Python script '$PYTHON_SCRIPT' was not found in this directory."
     exit 1
