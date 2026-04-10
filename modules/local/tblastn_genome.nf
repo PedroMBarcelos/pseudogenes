@@ -25,7 +25,6 @@ process TBLASTN_GENOME {
       -lcase_masking \
       -evalue ${params.blast_evalue_tblastn} \
       -max_target_seqs ${params.blast_max_target_seqs} \
-      -dbsize ${params.blast_dbsize_tblastn} \
       -outfmt "6 qseqid qlen sseqid slen qstart qend sstart send qseq sseq evalue bitscore score length pident nident mismatch positive gapopen gaps ppos sframe sstrand qcovs qcovhsp" \
       -query "${query_fasta}" \
       -db "${db_prefix}" \

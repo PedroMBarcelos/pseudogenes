@@ -13,6 +13,13 @@ process SSEARCH_REALIGN_CHUNK {
     out_file="${fragment_chunk.simpleName}.ssearch.out"
     : > "\${out_file}"
 
+    if ! command -v ssearch36 &> /dev/null && [ ! -f "${params.ssearch_bin}" ]; then
+      echo "WARNING: ssearch36 not found at ${params.ssearch_bin}" >&2
+      echo "To install: download from https://fasta.bioch.virginia.edu/" >&2
+      echo "For conda: conda install -c bioconda fasta" >&2
+      exit 1
+    fi
+
     while IFS=\$'\t' read -r line_num qseq_fragment sseq_fragment; do
       clean_qseq="\${qseq_fragment//-/}"
       clean_sseq="\${sseq_fragment//-/}"

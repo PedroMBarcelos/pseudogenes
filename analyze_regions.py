@@ -135,6 +135,20 @@ def main(args):
     
     ssearch_data = parse_ssearch_results(args.ssearch, args.min_evalue)
 
+    report_columns = [
+        'RegionID',
+        'Chromosome',
+        'Start',
+        'End',
+        'Strand',
+        'ParentProtein',
+        'ScoreDensity',
+        'NumHSPs',
+        'TotalFrameshifts',
+        'InternalStops',
+        'TotalDisablements'
+    ]
+
     print("INFO: Loading all HSP hits from BED file...")
     all_hits = defaultdict(list)
     with open(args.bed_hits, 'r') as f:
@@ -220,13 +234,12 @@ def main(args):
             })
 
     print(f"INFO: Writing final report to {args.output}...")
-    if final_results:
-        with open(args.output, 'w') as f_out:
-            header = final_results[0].keys()
-            f_out.write("\t".join(header) + "\n")
-            for row in final_results:
-                f_out.write("\t".join(map(str, row.values())) + "\n")
-    else:
+    with open(args.output, 'w') as f_out:
+        f_out.write("\t".join(report_columns) + "\n")
+        for row in final_results:
+            f_out.write("\t".join(str(row[column]) for column in report_columns) + "\n")
+
+    if not final_results:
         print("WARNING: No results were generated.")
 
 

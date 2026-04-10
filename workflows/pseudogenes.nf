@@ -45,7 +45,7 @@ workflow PSEUDOGENES {
     FILTER_TBLASTN(TBLASTN_GENOME.out.tblastn_out, EXTRACT_MIN_EVALUE.out.min_evalue)
 
     EXTRACT_FRAGMENT_CHUNKS(FILTER_TBLASTN.out.filtered_tblastn)
-    SSEARCH_REALIGN_CHUNK(EXTRACT_FRAGMENT_CHUNKS.out.fragment_chunk)
+    SSEARCH_REALIGN_CHUNK(EXTRACT_FRAGMENT_CHUNKS.out.fragment_chunk.flatten())
     CONCAT_SSEARCH_RESULTS(SSEARCH_REALIGN_CHUNK.out.chunk_result)
 
     TBLASTN_TO_BED(FILTER_TBLASTN.out.filtered_tblastn)
