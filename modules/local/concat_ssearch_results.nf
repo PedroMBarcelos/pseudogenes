@@ -10,6 +10,6 @@ process CONCAT_SSEARCH_RESULTS {
 
     script:
     """
-    cat *.ssearch.out > ssearch_fragment_realignment_results.out
+    cat ${chunk_results.collect { "\"${it}\"" }.join(' ')} > ssearch_fragment_realignment_results.out
     """
 }
