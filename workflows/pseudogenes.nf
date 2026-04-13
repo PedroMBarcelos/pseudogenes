@@ -11,6 +11,7 @@ include { FILTER_TBLASTN } from '../modules/local/filter_tblastn'
 include { EXTRACT_FRAGMENT_CHUNKS } from '../modules/local/extract_fragment_chunks'
 include { SSEARCH_REALIGN_CHUNK } from '../modules/local/ssearch_realign_chunk'
 include { CONCAT_SSEARCH_RESULTS } from '../modules/local/concat_ssearch_results'
+include { MAKE_MIN_EVALUE_FILE } from '../modules/local/make_min_evalue_file'
 include { TBLASTN_TO_BED } from '../modules/local/tblastn_to_bed'
 include { SORT_BED } from '../modules/local/sort_bed'
 include { MERGE_BED } from '../modules/local/merge_bed'
@@ -38,11 +39,22 @@ workflow PSEUDOGENES {
     MAKEBLASTDB_PROT(PREPARE_UNIPROT_AND_SHUFFLE.out.shuffled_fasta)
     MAKEBLASTDB_NUCL(PREPARE_GENOME_FASTA.out.genome_fasta)
 
-    BLASTP_NULL_MODEL(PREPARE_UNIPROT_AND_SHUFFLE.out.uniprot_fasta, MAKEBLASTDB_PROT.out.db_prefix, MAKEBLASTDB_PROT.out.db_files)
-    EXTRACT_MIN_EVALUE(BLASTP_NULL_MODEL.out.blastp_out)
+    def min_evalue_ch
+    if (params.min_evalue_file) {
+        min_evalue_ch = Channel.of(file(params.min_evalue_file))
+    } else if (params.min_evalue_manual != null) {
+        MAKE_MIN_EVALUE_FILE(Channel.value(params.min_evalue_manual))
+        min_evalue_ch = MAKE_MIN_EVALUE_FILE.out.min_evalue
+    } else if (params.run_null_model) {
+        BLASTP_NULL_MODEL(PREPARE_UNIPROT_AND_SHUFFLE.out.uniprot_fasta, MAKEBLASTDB_PROT.out.db_prefix, MAKEBLASTDB_PROT.out.db_files)
+        EXTRACT_MIN_EVALUE(BLASTP_NULL_MODEL.out.blastp_out)
+        min_evalue_ch = EXTRACT_MIN_EVALUE.out.min_evalue
+    } else {
+        error "No threshold source configured. Set --min_evalue_file, --min_evalue_manual, or enable --run_null_model."
+    }
 
     TBLASTN_GENOME(PREPARE_UNIPROT_AND_SHUFFLE.out.uniprot_fasta, MAKEBLASTDB_NUCL.out.db_prefix, MAKEBLASTDB_NUCL.out.db_files)
-    FILTER_TBLASTN(TBLASTN_GENOME.out.tblastn_out, EXTRACT_MIN_EVALUE.out.min_evalue)
+    FILTER_TBLASTN(TBLASTN_GENOME.out.tblastn_out, min_evalue_ch)
 
     EXTRACT_FRAGMENT_CHUNKS(FILTER_TBLASTN.out.filtered_tblastn)
     SSEARCH_REALIGN_CHUNK(EXTRACT_FRAGMENT_CHUNKS.out.fragment_chunk.flatten())
@@ -56,7 +68,7 @@ workflow PSEUDOGENES {
         CONCAT_SSEARCH_RESULTS.out.ssearch_results,
         SORT_BED.out.sorted_bed,
         MERGE_BED.out.merged_bed,
-        EXTRACT_MIN_EVALUE.out.min_evalue
+        min_evalue_ch
     )
 
     emit:

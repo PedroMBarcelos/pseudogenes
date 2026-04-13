@@ -19,7 +19,7 @@ What is already implemented:
 - Input resolution from local files or download URLs.
 - UniProt preparation and shuffled sequence generation.
 - BLAST database creation (protein and nucleotide).
-- blastp NULL model and dynamic minimum e-value extraction.
+- Optional blastp NULL model and dynamic minimum e-value extraction.
 - tblastn genome search and threshold-based filtering.
 - SSEARCH fragment chunking, scatter processing, and gather.
 - BED conversion, sorting, merge, and final report generation.
@@ -57,6 +57,43 @@ Important parameters (nextflow.config):
 - params.blast_bin_dir
 - params.ssearch_bin
 - params.ssearch_chunk_size
+
+Threshold source parameters:
+- params.run_null_model (default: false)
+- params.min_evalue_file (default: null)
+- params.min_evalue_manual (default: null)
+
+Threshold precedence:
+1. If `min_evalue_file` is set, that file is used.
+2. Else if `min_evalue_manual` is set, that value is used.
+3. Else if `run_null_model` is true, blastp null-model is executed and min e-value is extracted.
+4. Else the workflow exits with a configuration error.
+
+Examples:
+
+Run with default behavior (manual threshold required):
+
+```bash
+./nextflow run main.nf -profile local --min_evalue_manual 1e-20 -resume
+```
+
+Run null-model explicitly when desired:
+
+```bash
+./nextflow run main.nf -profile local --run_null_model true -resume
+```
+
+Skip null-model and use a manual threshold:
+
+```bash
+./nextflow run main.nf -profile local --run_null_model false --min_evalue_manual 1e-20 -resume
+```
+
+Skip null-model and reuse a previous threshold file:
+
+```bash
+./nextflow run main.nf -profile local --run_null_model false --min_evalue_file ./results_real/metrics/min_evalue.txt -resume
+```
 
 # How to run?
 Use the Nextflow workflow instead of the legacy shell scripts.
