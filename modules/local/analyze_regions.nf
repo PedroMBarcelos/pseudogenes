@@ -18,6 +18,6 @@ process ANALYZE_REGIONS {
       --bed_hits "${sorted_bed}" \
       --merged_regions "${merged_bed}" \
       --output pseudogene_analysis_report.tsv \
-      --min_evalue "\$(cat ${min_evalue})"
+      --min_evalue "\$(cat "${min_evalue}")"
     """
 }
