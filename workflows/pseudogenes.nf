@@ -1,5 +1,4 @@
 include { DOWNLOAD_UNIPROT } from '../modules/local/download_uniprot'
-include { DOWNLOAD_GENOME } from '../modules/local/download_genome'
 include { PREPARE_UNIPROT_AND_SHUFFLE } from '../modules/local/prepare_uniprot_and_shuffle'
 include { PREPARE_GENOME_FASTA } from '../modules/local/prepare_genome_fasta'
 include { MAKEBLASTDB_PROT } from '../modules/local/makeblastdb_prot'
@@ -27,11 +26,13 @@ workflow PSEUDOGENES {
     }
 
     def genome_source
-    if (params.genome_fasta && file(params.genome_fasta).exists()) {
-        genome_source = Channel.of(file(params.genome_fasta))
-    } else {
-        genome_source = DOWNLOAD_GENOME(Channel.value(params.genome_url))
+    if (!params.genome_fasta) {
+        error "Missing required genome input. Provide --genome_fasta with a local FASTA (.fna/.fa) or gzipped FASTA (.gz) file."
     }
+    if (!file(params.genome_fasta).exists()) {
+        error "Genome file not found: ${params.genome_fasta}. Provide a valid local path via --genome_fasta."
+    }
+    genome_source = Channel.of(file(params.genome_fasta))
 
     PREPARE_UNIPROT_AND_SHUFFLE(uniprot_source)
     PREPARE_GENOME_FASTA(genome_source)
@@ -40,17 +41,13 @@ workflow PSEUDOGENES {
     MAKEBLASTDB_NUCL(PREPARE_GENOME_FASTA.out.genome_fasta)
 
     def min_evalue_ch
-    if (params.min_evalue_file) {
-        min_evalue_ch = Channel.of(file(params.min_evalue_file))
-    } else if (params.min_evalue_manual != null) {
-        MAKE_MIN_EVALUE_FILE(Channel.value(params.min_evalue_manual))
-        min_evalue_ch = MAKE_MIN_EVALUE_FILE.out.min_evalue
-    } else if (params.run_null_model) {
+    if (params.run_null_model) {
         BLASTP_NULL_MODEL(PREPARE_UNIPROT_AND_SHUFFLE.out.uniprot_fasta, MAKEBLASTDB_PROT.out.db_prefix, MAKEBLASTDB_PROT.out.db_files)
         EXTRACT_MIN_EVALUE(BLASTP_NULL_MODEL.out.blastp_out)
         min_evalue_ch = EXTRACT_MIN_EVALUE.out.min_evalue
     } else {
-        error "No threshold source configured. Set --min_evalue_file, --min_evalue_manual, or enable --run_null_model."
+        MAKE_MIN_EVALUE_FILE(Channel.value(params.min_evalue))
+        min_evalue_ch = MAKE_MIN_EVALUE_FILE.out.min_evalue
     }
 
     TBLASTN_GENOME(PREPARE_UNIPROT_AND_SHUFFLE.out.uniprot_fasta, MAKEBLASTDB_NUCL.out.db_prefix, MAKEBLASTDB_NUCL.out.db_files)

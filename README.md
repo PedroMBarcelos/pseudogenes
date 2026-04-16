@@ -16,7 +16,7 @@ Main files:
 - modules/local/*.nf
 
 What is already implemented:
-- Input resolution from local files or download URLs.
+- Input resolution for local files (genome input is required from user path).
 - UniProt preparation and shuffled sequence generation.
 - BLAST database creation (protein and nucleotide).
 - Optional blastp NULL model and dynamic minimum e-value extraction.
@@ -29,26 +29,26 @@ Quick start:
 2. Run preview mode (no heavy execution):
 
 ```bash
-./nextflow run main.nf -preview -profile local
+./nextflow run main.nf -preview -profile local --genome_fasta ./genoma/GCF_000005845.2_ASM584v2_genomic.fna
 ```
 
 3. Run locally:
 
 ```bash
-./nextflow run main.nf -profile local -resume
+./nextflow run main.nf -profile local --genome_fasta ./genoma/GCF_000005845.2_ASM584v2_genomic.fna -resume
 ```
 
 4. Run with HPC profile (SLURM base settings):
 
 ```bash
-./nextflow run main.nf -profile hpc -resume
+./nextflow run main.nf -profile hpc --genome_fasta ./genoma/GCF_000005845.2_ASM584v2_genomic.fna -resume
 ```
 
 5. Enable containers when desired:
 
 ```bash
-./nextflow run main.nf -profile local,docker -resume
-./nextflow run main.nf -profile hpc,singularity -resume
+./nextflow run main.nf -profile local,docker --genome_fasta ./genoma/GCF_000005845.2_ASM584v2_genomic.fna -resume
+./nextflow run main.nf -profile hpc,singularity --genome_fasta ./genoma/GCF_000005845.2_ASM584v2_genomic.fna -resume
 ```
 
 Important parameters (nextflow.config):
@@ -59,48 +59,53 @@ Important parameters (nextflow.config):
 - params.ssearch_chunk_size
 
 Threshold source parameters:
+- params.min_evalue (default: 1e-7)
 - params.run_null_model (default: false)
-- params.min_evalue_file (default: null)
-- params.min_evalue_manual (default: null)
 
-Threshold precedence:
-1. If `min_evalue_file` is set, that file is used.
-2. Else if `min_evalue_manual` is set, that value is used.
-3. Else if `run_null_model` is true, blastp null-model is executed and min e-value is extracted.
-4. Else the workflow exits with a configuration error.
+Genome input parameter:
+- params.genome_fasta (required; local FASTA or gzipped FASTA)
+
+Threshold behavior:
+1. By default, `min_evalue` is used (default `1e-7`).
+2. If `run_null_model` is true, blastp null-model is executed and the generated minimum e-value is used.
+
+Genome behavior:
+1. `genome_fasta` must be provided by the user.
+2. If the input ends with `.gz`, it is decompressed automatically.
+3. If not compressed, it is used directly.
 
 Examples:
 
-Run with default behavior (manual threshold required):
+Run with default threshold (`1e-7`):
 
 ```bash
-./nextflow run main.nf -profile local --min_evalue_manual 1e-20 -resume
+./nextflow run main.nf -profile local --genome_fasta ./genoma/GCF_000005845.2_ASM584v2_genomic.fna -resume
 ```
 
-Run null-model explicitly when desired:
+Run with custom threshold:
 
 ```bash
-./nextflow run main.nf -profile local --run_null_model true -resume
+./nextflow run main.nf -profile local --genome_fasta ./genoma/GCF_000005845.2_ASM584v2_genomic.fna --min_evalue 1e-20 -resume
 ```
 
-Skip null-model and use a manual threshold:
+Run null-model explicitly (uses generated threshold):
 
 ```bash
-./nextflow run main.nf -profile local --run_null_model false --min_evalue_manual 1e-20 -resume
+./nextflow run main.nf -profile local --genome_fasta ./genoma/GCF_000005845.2_ASM584v2_genomic.fna --run_null_model true -resume
 ```
 
-Skip null-model and reuse a previous threshold file:
+Run with gzipped genome input:
 
 ```bash
-./nextflow run main.nf -profile local --run_null_model false --min_evalue_file ./results_real/metrics/min_evalue.txt -resume
+./nextflow run main.nf -profile local --genome_fasta ./genoma/GCF_000005845.2_ASM584v2_genomic.fna.gz --min_evalue 1e-20 -resume
 ```
 
 # How to run?
 Use the Nextflow workflow instead of the legacy shell scripts.
 
 ```bash
-./nextflow run main.nf -preview -profile local
-./nextflow run main.nf -profile local -resume
+./nextflow run main.nf -preview -profile local --genome_fasta ./genoma/GCF_000005845.2_ASM584v2_genomic.fna
+./nextflow run main.nf -profile local --genome_fasta ./genoma/GCF_000005845.2_ASM584v2_genomic.fna -resume
 ```
 
 The old shell entry points have been retired because their logic now lives in the DSL2 workflow.
