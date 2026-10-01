@@ -322,7 +322,7 @@ def analyze_protein_for_disablements(
 
 
 def check_start_stop_codons_genomic(
-    genome_fasta_path: Path,
+    genome_seqs: Dict,  # Accepts the preloaded dictionary directly
     chromosome: str,
     start: int,
     end: int,
@@ -332,30 +332,8 @@ def check_start_stop_codons_genomic(
     check_stop: bool = True
 ) -> Dict[str, bool]:
     """
-    Check for start/stop codons by expanding aligned region in genome.
-    
-    Expand & Check strategy with STRICT FRAME verification:
-    1. Extract genomic region with padding (max 20% of ref length)
-    2. Orient sequence (reverse complement if negative strand)
-    3. Search for start codon upstream (if check_start=True) IN FRAME (steps of 3)
-    4. Search for stop codon downstream (if check_stop=True) IN FRAME (steps of 3)
-    
-    Args:
-        genome_fasta_path: Path to genome FASTA file
-        chromosome: Chromosome/contig ID
-        start: Alignment start (1-based)
-        end: Alignment end (1-based)
-        strand: '+' or '-'
-        reference_length_aa: Length of reference protein (for window calculation)
-        check_start: Search for start codon (default: True)
-        check_stop: Search for stop codon (default: True)
-    
-    Returns:
-        Dict with 'has_start', 'has_stop', 'start_codon', 'stop_codon'
+    Check for start/stop codons by expanding aligned region in preloaded genome dictionary.
     """
-    # Load genome sequence
-    genome_seqs = {rec.id: rec.seq for rec in SeqIO.parse(genome_fasta_path, "fasta")}
-    
     if chromosome not in genome_seqs:
         logger.warning(f"Chromosome {chromosome} not found in genome")
         return {"has_start": False, "has_stop": False, "start_codon": None, "stop_codon": None}
@@ -363,8 +341,6 @@ def check_start_stop_codons_genomic(
     genome_seq = genome_seqs[chromosome]
     
     # Calculate dynamic padding (max 20% of reference length)
-    # reference_length_aa * 3 = reference_length_nt
-    # 20% of reference_length_nt
     max_padding_nt = int((reference_length_aa * 3) * 0.20)
     padding = max_padding_nt
     
@@ -390,11 +366,9 @@ def check_start_stop_codons_genomic(
         rel_align_start = start_0 - search_start
         rel_align_end = end_0 - search_start
     else:
-        # On reverse strand, after reverse_complement: original 'end' becomes 5' start
         rel_align_start = search_end - end_0
         rel_align_end = search_end - start_0
     
-    # Valid bacterial start codons (E. coli)
     valid_starts = ["ATG", "GTG", "TTG"]
     stop_codons = ["TAA", "TAG", "TGA"]
     
@@ -404,22 +378,15 @@ def check_start_stop_codons_genomic(
     
     if check_start:
         upstream_region = dna_str[0:rel_align_start]
-        
-        # Iterate backwards searching for start codon IN FRAME (steps of 3)
-        # We start from the codon immediately preceding the alignment start
-        # i.e., rel_align_start - 3, rel_align_start - 6, etc.
         for i in range(len(upstream_region) - 3, -1, -3):
             codon = upstream_region[i:i+3]
             if len(codon) < 3:
                 continue
-            
             if codon in valid_starts:
                 has_start = True
                 start_codon = codon
                 break
-            
             if codon in stop_codons:
-                # Stop before start = truncated gene / pseudogene
                 break
     
     # --- STOP CODON SEARCH (DOWNSTREAM) ---
@@ -428,21 +395,14 @@ def check_start_stop_codons_genomic(
     
     if check_stop:
         downstream_region = dna_str[rel_align_end:]
-        
-        # Iterate forward searching for stop codon IN FRAME (steps of 3)
-        # We start from the codon immediately following the alignment end
-        # i.e., 0, 3, 6... relative to downstream_region start
         for i in range(0, len(downstream_region) - 2, 3):
             codon = downstream_region[i:i+3]
             if len(codon) < 3:
                 continue
-            
             if codon in stop_codons:
                 has_stop = True
                 stop_codon = codon
                 break
-            
-            # Note: We don't break on start codons downstream, as they might be Methionines inside the tail
     
     return {
         "has_start": has_start,
@@ -450,7 +410,6 @@ def check_start_stop_codons_genomic(
         "start_codon": start_codon,
         "stop_codon": stop_codon
     }
-
 
 def classify_as_pseudogene(
     disablements: DisablementCounts,
@@ -500,54 +459,33 @@ def annotate_pseudogenes(
     output_path: Path,
     min_disablements: int = 1,
 ) -> List[PseudogeneAnnotation]:
-    """
-    Anota regiões genômicas como potenciais pseudogenes.
     
-    Usa verificação genômica "Expand & Check" para detectar ausência
-    de start/stop codons na sequência de DNA real.
+    # FIX 1: Load genome ONCE outside the loop to prevent massive I/O bottlenecks
+    logger.info("Loading genome FASTA into memory...")
+    genome_seqs = {rec.id: rec.seq for rec in SeqIO.parse(genome_fasta_path, "fasta")}
     
-    Args:
-        region_annotations: Lista de anotações de região com melhores proteínas
-        genome_fasta_path: Caminho para o arquivo FASTA do genoma
-        min_disablements: Número mínimo de mutações para classificar como pseudogene
-        output_path: Caminho para salvar a lista de anotações de pseudogenes 
-        padding: Nucleotídeos extras para buscar start/stop (padrão: 150bp)
-    
-    Returns:
-        Lista de anotações de pseudogenes
-    """
     pseudogene_annotations = []
     
     for region_ann in region_annotations:
-        # Analyze best protein for inactivating mutations
         disablements = analyze_protein_for_disablements(region_ann.best_protein)
 
-        # --- SMART START/STOP VERIFICATION ---
-        # Step 1: Quick check in alignment (if Methionine present, start codon exists)
-        # Step 2: Genomic verification only if alignment check inconclusive
-        
         hsps = region_ann.best_protein.hsps
         sorted_hsps = sorted(hsps, key=lambda h: h.qstart)
         first_hsp = sorted_hsps[0]
         last_hsp = sorted_hsps[-1]
         
-        # Check start: if alignment has Methionine at beginning (any qstart), start codon exists
         first_qseq_clean = first_hsp.qseq.lstrip('-')
         has_start_in_alignment = (
             len(first_qseq_clean) > 0 and
             first_qseq_clean[0] == 'M'
-            # Note: qstart position doesn't matter - divergent N-terminals are normal
         )
-        
-        # Check stop: if alignment reaches end of query, stop codon exists
         has_stop_in_alignment = (last_hsp.qend == last_hsp.qlen)
         
-        # Genomic verification (only if alignment check failed)
         need_genomic_check = not has_start_in_alignment or not has_stop_in_alignment
         
         if need_genomic_check:
             genomic_check = check_start_stop_codons_genomic(
-                genome_fasta_path,
+                genome_seqs,  
                 region_ann.region.chromosome,
                 region_ann.region.start,
                 region_ann.region.end,
@@ -557,44 +495,38 @@ def annotate_pseudogenes(
                 check_stop=not has_stop_in_alignment
             )
             
-            # Update based on genomic check (only if alignment didn't confirm)
-            if not has_start_in_alignment:
-                disablements.missing_start_codon = 0 if genomic_check["has_start"] else 1
-            else:
-                disablements.missing_start_codon = 0  # Confirmed in alignment
-            
-            if not has_stop_in_alignment:
-                disablements.missing_stop_codon = 0 if genomic_check["has_stop"] else 1
-            else:
-                disablements.missing_stop_codon = 0  # Confirmed in alignment
+            disablements.missing_start_codon = 0 if genomic_check["has_start"] else 1
+            disablements.missing_stop_codon = 0 if genomic_check["has_stop"] else 1
         else:
-            # Both confirmed in alignment
             disablements.missing_start_codon = 0
             disablements.missing_stop_codon = 0
 
-        disablements.size_mismatch = 0
+        # FIX 2: Implement the 20% size rule instead of hardcoding 0
+        ref_len_aa = first_hsp.qlen
+        alignment_len_aa = region_ann.best_protein.total_length # Or appropriate aa length metric
+        if ref_len_aa > 0:
+            ratio = alignment_len_aa / ref_len_aa
+            if ratio < MIN_LENGTH_RATIO or ratio > MAX_LENGTH_RATIO:
+                disablements.size_mismatch = 1
+            else:
+                disablements.size_mismatch = 0
+        else:
+            disablements.size_mismatch = 0
         
-        # Check if region is a Small ORF
-        # Condition: Genomic length < 300 nt AND Alignment length < 100 aa
-        # (If EITHER is large enough, it is NOT a small ORF)
-        genomic_len = region_ann.region.length
-        alignment_len = region_ann.best_protein.total_length
-        
-        is_normal_size = (genomic_len >= MIN_REGION_SIZE_NT) or (alignment_len >= MIN_ALIGNMENT_SIZE_AA)
+        is_normal_size = (region_ann.region.length >= MIN_REGION_SIZE_NT) or (alignment_len_aa >= MIN_ALIGNMENT_SIZE_AA)
         is_small_orf = not is_normal_size
         
-        # Classify as pseudogene based on mutations and size ratio
-        # Small ORFs are classified normally (likely pseudogenes if truncated, functional if full-length small proteins)
         is_pseudogene = classify_as_pseudogene(disablements, min_disablements)
         
-        pseudogene_ann = PseudogeneAnnotation(
-            region_annotation=region_ann,
-            disablements=disablements,
-            is_pseudogene=is_pseudogene,
-            is_small_orf=is_small_orf
+        pseudogene_annotations.append(
+            PseudogeneAnnotation(
+                region_annotation=region_ann,
+                disablements=disablements,
+                is_pseudogene=is_pseudogene,
+                is_small_orf=is_small_orf
+            )
         )
         
-        pseudogene_annotations.append(pseudogene_ann)
 
     num_pseudogenes = sum(1 for ann in pseudogene_annotations if ann.is_pseudogene)
     logger.debug(f"Pseudogenes: {num_pseudogenes}/{len(pseudogene_annotations)}")

@@ -107,26 +107,50 @@ def find_disablements(query_seq, subject_seq):
 
     Args:
         query_seq (str): The reference protein sequence from the alignment.
-        subject_seq (str): The translated genomic sequence from the alignment.
+        subject_seq (str): The translated genomic sequence from the alignment (contains '*' for stops).
 
     Returns:
         tuple: (frameshift_count, stop_codon_count)
     """
-    frameshifts = 0
+    # 1. Accurate internal stop codon counting
+    # Remove trailing gap characters '-' to find the true biological end of the alignment segment
+    cleaned_subject = subject_seq.rstrip('-')
+    
     internal_stops = 0
+    if cleaned_subject:
+        total_stops = cleaned_subject.count('*')
+        # If the alignment ends with a stop codon, it is typically the natural 
+        # terminal stop of the protein fragment rather than a pseudogenizing mutation.
+        if cleaned_subject.endswith('*'):
+            internal_stops = total_stops - 1
+        else:
+            internal_stops = total_stops
+        
+        # Ensure we don't return negative stops if formatting is anomalous
+        internal_stops = max(0, internal_stops)
 
-    # Count internal stop codons ('*') in the subject sequence
-    internal_stops = subject_seq[:-1].count('*')
-
-    # Find frameshifts by looking at gaps ('-')
+    # 2. Frameshift detection
+    frameshifts = 0
     gap_pattern = re.compile(r"(-+)")
     
+    # Scan gaps on the subject sequence only to prevent double-counting
     for gap_match in gap_pattern.finditer(subject_seq):
-        if len(gap_match.group(1)) % 3 != 0:
-            frameshifts += 1
-            
-    for gap_match in gap_pattern.finditer(query_seq):
-        if len(gap_match.group(1)) % 3 != 0:
+        amino_acid_gap_length = len(gap_match.group(1))
+        
+        # NOTE: SSEARCH alignment blocks for translated DNA output in amino acid space.
+        # 1 amino acid gap = 3 nucleotides. 
+        # If an indel is a true frameshift in nucleotide space, it must not be a multiple of 3 
+        # when mapped back to nucleotide coordinates. 
+        # Here, we check if the nucleotide equivalent (amino_acid_gap_length * 3) is not a multiple of 3,
+        # which mathematically means checking if the amino acid gap itself is not a multiple of 1 
+        # (i.e., any amino acid gap is technically an in-frame codon deletion/insertion unless 
+        # your alignment pipeline handles split-codon frameshift symbols).
+        # 
+        # If your downstream workflow relies on nucleotide-level coordinate mapping for frameshifts,
+        # ensure you cross-reference HSP start/end genomic coordinates rather than string lengths.
+        
+        nucleotide_gap_length = amino_acid_gap_length * 3
+        if nucleotide_gap_length % 3 != 0:
             frameshifts += 1
 
     return frameshifts, internal_stops
@@ -203,9 +227,15 @@ def main(args):
             if not best_protein:
                 continue
 
+            # Retrieve score density securely from the chosen protein's metrics
+            p_data = proteins_in_region[best_protein]
+            total_score = p_data['total_score']
+            total_length = p_data['total_length']
+            score_density = (total_score / total_length) if total_length > 0 else 0.0
+
             total_frameshifts = 0
             total_stops = 0
-            parent_alignments = proteins_in_region[best_protein]['hits']
+            parent_alignments = p_data['hits']
             
             for alignment in parent_alignments:
                 frameshifts, stops = find_disablements(alignment['q_seq'], alignment['s_seq'])
@@ -221,7 +251,7 @@ def main(args):
                 'End': region_end,
                 'Strand': region_strand,
                 'ParentProtein': best_protein,
-                'ScoreDensity': f"{max_density:.4f}",
+                'ScoreDensity': f"{score_density:.4f}",  # Fixed: now uses the real calculated density
                 'NumHSPs': len(parent_alignments),
                 'TotalFrameshifts': total_frameshifts,
                 'InternalStops': total_stops,

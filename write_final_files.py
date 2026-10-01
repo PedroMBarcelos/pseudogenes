@@ -340,7 +340,7 @@ def generate_summary_report(annotations: List[PseudogeneAnnotation], output_path
     pd_avg, pd_min, pd_max, pd_below = calc_stats(pseudo_detected_ratios)
     pd_count = len(pseudo_detected_ratios)
 
-    # 4. Pseudogenes - Small ORFs
+    # 4. Pseudogenes - Small ORFs (FIXED variable references to use 'ps_')
     pseudo_small_ratios = [s['ratio'] for s in coverage_stats if s['is_pseudogene'] and s['is_small_orf']]
     ps_avg, ps_min, ps_max, ps_below = calc_stats(pseudo_small_ratios)
     ps_count = len(pseudo_small_ratios)
@@ -404,7 +404,6 @@ REFERENCE PROTEIN COVERAGE ANALYSIS:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, 'w') as f:
         f.write(report)
-
     
     return report
 

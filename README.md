@@ -107,3 +107,11 @@ The old shell entry points have been retired because their logic now lives in th
 
 
 
+cd conda_dataset/
+conda -n create ncbi_datasets
+conda create -n ncbi_datasets
+conda activate ncbi_datasets
+conda install -c conda-forge ncbi-datasets-cli
+datasets download genome accession --inputfile accessions.txt --dehydrated --filename my-genomes.zip --include genome,gff3
+unzip my-genomes.zip -d my-genomes
+datasets rehydrate --directory my-genomes/

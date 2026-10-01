@@ -36,6 +36,11 @@ def assign_hsps_to_regions(
             if region.chromosome != hsp_chrom:
                 continue
             
+            # Ensure strand consistency (adjust attribute name if it's region.strand)
+            if hasattr(region, 'strand') and hasattr(hsp, 'strand'):
+                if region.strand != hsp.strand:
+                    continue
+            
             # Check overlap
             if hsp_start <= region.end and hsp_end >= region.start:
                 region_key = (region.chromosome, region.start, region.end)
