@@ -1,5 +1,5 @@
 process APPLY_FINAL_FILTERS {
-    tag "$meta.id"
+    tag { "${meta.id}" }
     label 'light'
     publishDir({ "${params.outdir}/${meta.id}/final" }, mode: 'copy', pattern: '*.jsonl')
     

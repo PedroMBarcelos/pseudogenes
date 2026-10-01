@@ -1,5 +1,5 @@
 process PSEUDOGENE_DETECTION {
-    tag "$meta.id"
+    tag { "${meta.id}" }
     label 'medium'
     publishDir({ "${params.outdir}/${meta.id}/pseudogenes" }, mode: 'copy', pattern: '*.jsonl')
     

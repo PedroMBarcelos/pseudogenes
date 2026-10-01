@@ -1,6 +1,6 @@
 process PREPARE_GENOME_FASTA {
     cache "lenient"
-    tag "$meta.id"
+    tag { "${meta.id}" }
     label 'light'
     publishDir({ "${params.outdir}/${meta.id}/intermediate" }, mode: 'copy', pattern: '*.fasta')
 

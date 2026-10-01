@@ -1,5 +1,5 @@
 process EXTRACT_FRAGMENT_CHUNKS {
-    tag "$meta.id"
+    tag { "${meta.id}" }
     label 'light'
     publishDir({ "${params.outdir}/${meta.id}/intermediate" }, mode: 'copy', pattern: '${meta.id}_frag_chunk_*.tsv')
 

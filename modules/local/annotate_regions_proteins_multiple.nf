@@ -1,5 +1,5 @@
 process ANNOTATE_REGIONS_WITH_BEST_PROTEINS {
-    tag "$meta.id"
+    tag { "${meta.id}" }
     label 'light'
     publishDir({ "${params.outdir}/${meta.id}/annotations" }, mode: 'copy', pattern: '*.jsonl')
     

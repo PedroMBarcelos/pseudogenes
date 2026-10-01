@@ -1,6 +1,6 @@
 process TBLASTN_GENOME {
     cache "lenient"
-    tag "$meta.id"
+    tag { "${meta.id}" }
     label 'medium'
     publishDir({ "${params.outdir}/${meta.id}/blast" }, mode: 'copy', pattern: '*.tblastn.out')
 

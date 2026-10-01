@@ -1,7 +1,7 @@
 process ANALYZE_REGIONS { // (or ANALYZE_REGIONS)
-    tag "$meta.id"
+    tag { "${meta.id}" }
     label 'medium'
-    publishDir "${params.outdir}/${meta.id}/analysis", mode: 'copy', pattern: '*.tsv'
+    publishDir({ "${params.outdir}/${meta.id}/analysis" }, mode: 'copy', pattern: '*.tsv')
 
     input:
     tuple val(meta), path(ssearch_results), path(sorted_bed), path(merged_bed)

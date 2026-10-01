@@ -1,5 +1,5 @@
 process SORT_BED {
-    tag "$meta.id"
+    tag { "${meta.id}" }
     label 'light'
     publishDir({ "${params.outdir}/${meta.id}/bed" }, mode: 'copy', pattern: '*.sorted.bed')
 

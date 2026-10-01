@@ -1,5 +1,5 @@
 process FILTER_TBLASTN {
-    tag "$meta.id"
+    tag { "${meta.id}" }
     label 'light'
     publishDir({ "${params.outdir}/${meta.id}/intermediate" }, mode: 'copy', pattern: '*.filtered.out')
 

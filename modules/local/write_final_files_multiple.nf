@@ -1,5 +1,5 @@
 process WRITE_FINAL_FILES {
-    tag "$meta.id"
+    tag { "${meta.id}" }
     label 'light'
     publishDir({ "${params.outdir}/${meta.id}/final" }, mode: 'copy', pattern: '*.{tsv,gff3,txt}')
     
