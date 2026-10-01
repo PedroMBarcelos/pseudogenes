@@ -76,9 +76,9 @@ workflow PSEUDOGENES_TEST {
         .mix(Channel.fromPath("${params.genomes_dir}/GCF_*", type: 'dir'))
         .map { dir ->
             def id = dir.getName()
-            def fastaList = file("${dir}/*_genomic.fna")
+            def fastaList = files("${dir}/*_genomic.fna")
             def fasta = fastaList instanceof Collection ? fastaList[0] : (fastaList.exists() ? fastaList : null)
-            def gffList = file("${dir}/*.gff*")
+            def gffList = files("${dir}/*.gff*")
             def gffFile = gffList instanceof Collection ? gffList[0] : (gffList.exists() ? gffFile : null)
 
             int cdsCount = 0
@@ -122,7 +122,7 @@ workflow PSEUDOGENES_TEST {
     // Select the correct uniprot channel (shuffled or standard file wrapped as a channel)
     def uniprot_ch = params.run_null_model ? 
         PREPARE_UNIPROT_AND_SHUFFLE.out.uniprot_fasta : 
-        Channel.value(file(params.uniprot_fasta))
+        Channel.value(files(params.uniprot_fasta))
 
     // Combine with the nucleotide genome database bundle
     def tblastn_input_ch = uniprot_ch
