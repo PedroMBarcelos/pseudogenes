@@ -1,0 +1,27 @@
+# Step 1: Ignore everything
+*
+
+# Step 2: BUT, do NOT ignore the .gitignore file itself!
+!.gitignore
+!.git
+# Step 3: Un-ignore specific files in the root directory
+!Python_translation.py
+!pipeline.md
+!README.md
+!models/
+!models/**
+!analise_blast.py
+!analyze_regions.py
+!annotate_regions_with_best_proteins.py
+!apply_final_filters.py
+!pseudogene_detection.py
+!utils.py
+!write_final_files.py
+!main.nf
+!nextflow.config
+!conf/
+!conf/**
+!workflows/
+!workflows/**
+!modules/
+!modules/**
