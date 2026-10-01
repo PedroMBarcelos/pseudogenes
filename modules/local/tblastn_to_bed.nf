@@ -1,6 +1,6 @@
 process TBLASTN_TO_BED {
     label 'light'
-    publishDir "${params.outdir}/bed", mode: 'copy', pattern: 'protein_hits.bed'
+    publishDir({ "${params.outdir}/bed" }, mode: 'copy', pattern: 'protein_hits.bed')
 
     input:
     path filtered_tblastn

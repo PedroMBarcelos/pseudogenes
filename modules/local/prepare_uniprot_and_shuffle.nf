@@ -1,6 +1,6 @@
 process PREPARE_UNIPROT_AND_SHUFFLE {
     label 'medium'
-    publishDir "${params.outdir}/intermediate", mode: 'copy', pattern: 'uniprot_sprot.fasta*'
+    publishDir({ "${params.outdir}/intermediate" }, mode: 'copy', pattern: 'uniprot_sprot.fasta*')
 
     input:
     path uniprot_input

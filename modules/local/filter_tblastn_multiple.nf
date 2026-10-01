@@ -1,7 +1,7 @@
 process FILTER_TBLASTN {
     tag "$meta.id"
     label 'light'
-    publishDir "${params.outdir}/${meta.id}/intermediate", mode: 'copy', pattern: '*.filtered.out'
+    publishDir({ "${params.outdir}/${meta.id}/intermediate" }, mode: 'copy', pattern: '*.filtered.out')
 
     input:
     tuple val(meta), path(tblastn_out)  // <-- Must be a tuple here!

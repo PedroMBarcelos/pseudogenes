@@ -1,6 +1,6 @@
 process WRITE_FINAL_FILES {
-    publishDir "${params.outdir}/final", mode: 'copy'
-    
+    publishDir({ "${params.outdir}/final" }, mode: 'copy')
+
     input:
         path pseudogene_annotations
     

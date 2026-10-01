@@ -1,7 +1,7 @@
 process APPLY_FINAL_FILTERS {
     tag "$meta.id"
     label 'light'
-    publishDir "${params.outdir}/${meta.id}/final", mode: 'copy', pattern: '*.jsonl'
+    publishDir({ "${params.outdir}/${meta.id}/final" }, mode: 'copy', pattern: '*.jsonl')
     
     input:
     tuple val(meta), path(pseudogene_annotations)

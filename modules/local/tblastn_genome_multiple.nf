@@ -2,7 +2,7 @@ process TBLASTN_GENOME {
     cache "lenient"
     tag "$meta.id"
     label 'medium'
-    publishDir "${params.outdir}/${meta.id}/blast", mode: 'copy', pattern: '*.tblastn.out'
+    publishDir({ "${params.outdir}/${meta.id}/blast" }, mode: 'copy', pattern: '*.tblastn.out')
 
     input:
     tuple val(meta), path(query_fasta), val(db_prefix), path(db_files)

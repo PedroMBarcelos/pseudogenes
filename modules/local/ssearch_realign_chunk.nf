@@ -1,6 +1,6 @@
 process SSEARCH_REALIGN_CHUNK {
     label 'medium'
-    publishDir "${params.outdir}/ssearch", mode: 'copy', pattern: '*.ssearch.out'
+    publishDir({ "${params.outdir}/ssearch" }, mode: 'copy', pattern: '*.ssearch.out')
 
     input:
     path fragment_chunk

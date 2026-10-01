@@ -1,7 +1,7 @@
 process TBLASTN_TO_BED {
     tag "$meta.id"
     label 'light'
-    publishDir "${params.outdir}/${meta.id}/bed", mode: 'copy', pattern: '*.bed'
+    publishDir({ "${params.outdir}/${meta.id}/bed" }, mode: 'copy', pattern: '*.bed')
 
     input:
     tuple val(meta), path(filtered_tblastn)

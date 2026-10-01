@@ -1,6 +1,6 @@
 process PREPARE_GENOME_FASTA {
     label 'light'
-    publishDir "${params.outdir}/intermediate", mode: 'copy', pattern: 'genome.fna'
+    publishDir({ "${params.outdir}/intermediate" }, mode: 'copy', pattern: 'genome.fna')
 
     input:
     path genome_input

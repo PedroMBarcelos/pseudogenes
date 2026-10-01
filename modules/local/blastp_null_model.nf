@@ -1,6 +1,6 @@
 process BLASTP_NULL_MODEL {
     label 'medium'
-    publishDir "${params.outdir}/blast", mode: 'copy', pattern: '*.blastp.out'
+    publishDir({ "${params.outdir}/blast" }, mode: 'copy', pattern: '*.blastp.out')
 
     input:
     path query_fasta

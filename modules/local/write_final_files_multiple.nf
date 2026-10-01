@@ -1,7 +1,7 @@
 process WRITE_FINAL_FILES {
     tag "$meta.id"
     label 'light'
-    publishDir "${params.outdir}/${meta.id}/final", mode: 'copy', pattern: '*.{tsv,gff3,txt}'
+    publishDir({ "${params.outdir}/${meta.id}/final" }, mode: 'copy', pattern: '*.{tsv,gff3,txt}')
     
     input:
     tuple val(meta), path(pseudogene_annotations)

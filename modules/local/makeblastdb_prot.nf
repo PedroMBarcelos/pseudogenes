@@ -1,7 +1,7 @@
 process MAKEBLASTDB_PROT {
     cache "lenient"
     label 'medium'
-    publishDir "${params.outdir}/blastdb", mode: 'copy'
+    publishDir({ "${params.outdir}/blastdb" }, mode: 'copy')
 
     input:
     path fasta

@@ -1,8 +1,8 @@
 process MAKEBLASTDB_NUCL {
     tag "$meta.id"
     label 'medium'
-    publishDir "${params.outdir}/${meta.id}/blastdb", mode: 'copy', pattern: "${meta.id}_db.*"
-    publishDir "${params.outdir}/${meta.id}/blastdb", mode: 'copy', pattern: "${meta.id}_genoma_cds_mascarado.fasta"
+    publishDir({ "${params.outdir}/${meta.id}/blastdb" }, mode: 'copy', pattern: "${meta.id}_db.*")
+    publishDir({ "${params.outdir}/${meta.id}/blastdb" }, mode: 'copy', pattern: "${meta.id}_genoma_cds_mascarado.fasta")
 
     input:
     tuple val(meta), path(fasta), path(gff_source)
@@ -14,7 +14,7 @@ process MAKEBLASTDB_NUCL {
     def db_name = "${meta.id}_db"
     """
     # 1. Extract CDS regions safely (ignoring comments and handling standard GFF3)
-    awk '\$1 !~ /^#/ && \$3 == "CDS" {print \$1 "\t" \$4-1 "\t" \$5}' "${gff_source}" > ${meta.id}_cds_regions.bed
+    awk '\$1 !~ /^#/ && \$3 == "CDS" || \$3 == "gene" {print \$1 "\t" \$4-1 "\t" \$5}' "${gff_source}" > ${meta.id}_cds_regions.bed
     
     # 2. Check if BED file actually got features; fallback gracefully if empty
     if [ ! -s ${meta.id}_cds_regions.bed ]; then

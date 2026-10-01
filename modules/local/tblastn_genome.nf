@@ -1,6 +1,6 @@
 process TBLASTN_GENOME {
     label 'medium'
-    publishDir "${params.outdir}/blast", mode: 'copy', pattern: '*.tblastn.out'
+    publishDir({ "${params.outdir}/blast" }, mode: 'copy', pattern: '*.tblastn.out')
 
     input:
     path query_fasta

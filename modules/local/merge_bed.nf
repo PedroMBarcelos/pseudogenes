@@ -1,6 +1,6 @@
 process MERGE_BED {
     label 'light'
-    publishDir "${params.outdir}/bed", mode: 'copy', pattern: 'merged_protein_features.bed'
+    publishDir({ "${params.outdir}/bed" }, mode: 'copy', pattern: 'merged_protein_features.bed')
 
     input:
     path sorted_bed

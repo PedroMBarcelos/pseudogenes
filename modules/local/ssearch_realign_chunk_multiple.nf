@@ -1,7 +1,7 @@
 process SSEARCH_REALIGN_CHUNK {
     tag "$meta.id - ${fragment_chunk.simpleName}"
     label 'medium'
-    publishDir "${params.outdir}/${meta.id}/ssearch", mode: 'copy', pattern: '*.ssearch.out'
+    publishDir({ "${params.outdir}/${meta.id}/ssearch" }, mode: 'copy', pattern: '*.ssearch.out')
 
     input:
     tuple val(meta), path(fragment_chunk)

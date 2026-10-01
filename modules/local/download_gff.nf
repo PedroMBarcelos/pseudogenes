@@ -1,6 +1,6 @@
 process DOWNLOAD_GFF {
     label 'light'
-    publishDir "${params.outdir}/references", mode: 'copy'
+    publishDir({ "${params.outdir}/references" }, mode: 'copy')
 
     input:
     val url

@@ -1,6 +1,6 @@
 process ANALYZE_REGIONS {
     label 'medium'
-    publishDir "${params.outdir}", mode: 'copy', pattern: 'pseudogene_analysis_report.tsv'
+    publishDir({ "${params.outdir}" }, mode: 'copy', pattern: 'pseudogene_analysis_report.tsv')
 
     input:
     path ssearch_results

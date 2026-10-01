@@ -1,6 +1,6 @@
 process EXTRACT_MIN_EVALUE {
     label 'light'
-    publishDir "${params.outdir}/metrics", mode: 'copy'
+    publishDir({ "${params.outdir}/metrics" }, mode: 'copy')
 
     input:
     path blastp_out

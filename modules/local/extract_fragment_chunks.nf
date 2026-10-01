@@ -1,6 +1,6 @@
 process EXTRACT_FRAGMENT_CHUNKS {
     label 'light'
-    publishDir "${params.outdir}/intermediate", mode: 'copy', pattern: 'frag_chunk_*.tsv'
+    publishDir({ "${params.outdir}/intermediate" }, mode: 'copy', pattern: 'frag_chunk_*.tsv')
 
     input:
     path filtered_tblastn

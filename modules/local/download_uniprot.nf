@@ -1,6 +1,6 @@
 process DOWNLOAD_UNIPROT {
     label 'light'
-    publishDir "${params.outdir}/references", mode: 'copy'
+    publishDir({ "${params.outdir}/references" }, mode: 'copy')
 
     input:
     val url

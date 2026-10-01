@@ -1,6 +1,6 @@
 process ANNOTATE_REGIONS_WITH_BEST_PROTEINS {
-    publishDir "${params.outdir}", mode: 'copy'
-    
+    publishDir({ "${params.outdir}" }, mode: 'copy')
+
     input:
         path regions_path
         path hsps_path

@@ -1,6 +1,6 @@
 process APPLY_FINAL_FILTERS {
-    publishDir "${params.outdir}/final", mode: 'copy'
-    
+    publishDir({ "${params.outdir}/final" }, mode: 'copy')
+
     input:
         path pseudogene_annotations
         val min_coverage

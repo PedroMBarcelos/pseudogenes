@@ -1,7 +1,7 @@
 process CONCAT_SSEARCH_RESULTS {
     tag "$meta.id"
     label 'light'
-    publishDir "${params.outdir}/${meta.id}/ssearch", mode: 'copy', pattern: '*.out'
+    publishDir ({ "${params.outdir}/${meta.id}/ssearch" }, mode: 'copy', pattern: '*.out')
 
     input:
     tuple val(meta), path(chunk_results)

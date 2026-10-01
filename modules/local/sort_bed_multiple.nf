@@ -1,7 +1,7 @@
 process SORT_BED {
     tag "$meta.id"
     label 'light'
-    publishDir "${params.outdir}/${meta.id}/bed", mode: 'copy', pattern: '*.sorted.bed'
+    publishDir({ "${params.outdir}/${meta.id}/bed" }, mode: 'copy', pattern: '*.sorted.bed')
 
     input:
     tuple val(meta), path(bed_hits)
