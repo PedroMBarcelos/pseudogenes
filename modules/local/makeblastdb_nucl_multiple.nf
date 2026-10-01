@@ -1,8 +1,8 @@
 process MAKEBLASTDB_NUCL {
     tag { "${meta.id}" }
     label 'medium'
-    publishDir({ "${params.outdir}/${meta.id}/blastdb" }, mode: 'copy', pattern: "${meta.id}_db.*")
-    publishDir({ "${params.outdir}/${meta.id}/blastdb" }, mode: 'copy', pattern: "${meta.id}_genoma_cds_mascarado.fasta")
+    publishDir({ "${params.outdir}/${meta.id}/blastdb" }, mode: 'copy', pattern: "*_db.*")
+    publishDir({ "${params.outdir}/${meta.id}/blastdb" }, mode: 'copy', pattern: "*_genoma_cds_mascarado.fasta")
 
     input:
     tuple val(meta), path(fasta), path(gff_source)

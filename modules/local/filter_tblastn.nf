@@ -1,6 +1,6 @@
 process FILTER_TBLASTN {
     label 'light'
-    publishDir "${params.outdir}/intermediate", mode: 'copy', pattern: 'genome.tblastn.filtered.out'
+    publishDir({ "${params.outdir}/intermediate" }, mode: 'copy', pattern: 'genome.tblastn.filtered.out')
 
     input:
     path tblastn_out

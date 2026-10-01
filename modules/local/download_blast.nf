@@ -1,6 +1,6 @@
 process DOWNLOAD_BLAST {
     label 'light'
-    publishDir "${projectDir}/", mode: 'copy'
+    publishDir({ "${projectDir}/" }, mode: 'copy')
 
     input:
     val url
