@@ -1,4 +1,5 @@
 process SSEARCH_REALIGN_CHUNK {
+    cache 'lenient'
     label 'medium'
     publishDir({ "${params.outdir}/ssearch" }, mode: 'copy', pattern: '*.ssearch.out')
 

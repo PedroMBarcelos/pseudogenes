@@ -1,4 +1,5 @@
 process SSEARCH_REALIGN_CHUNK {
+    cache 'lenient'
     tag "$meta.id - ${fragment_chunk.simpleName}"
     label 'medium'
     publishDir({ "${params.outdir}/${meta.id}/ssearch" }, mode: 'copy', pattern: '*.ssearch.out')

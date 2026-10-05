@@ -1,4 +1,5 @@
 process TBLASTN_TO_BED {
+    cache 'lenient'
     tag { "${meta.id}" }
     label 'light'
     publishDir({ "${params.outdir}/${meta.id}/bed" }, mode: 'copy', pattern: '*.bed')

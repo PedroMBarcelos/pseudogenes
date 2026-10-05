@@ -1,4 +1,5 @@
 process PREPARE_UNIPROT_AND_SHUFFLE {
+    cache 'lenient'
     label 'medium'
     publishDir({ "${params.outdir}/intermediate" }, mode: 'copy', pattern: 'uniprot_sprot.fasta*')
 

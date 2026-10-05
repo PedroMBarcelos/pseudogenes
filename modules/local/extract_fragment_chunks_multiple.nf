@@ -1,7 +1,8 @@
 process EXTRACT_FRAGMENT_CHUNKS {
+    cache 'lenient'
     tag { "${meta.id}" }
     label 'light'
-    publishDir({ "${params.outdir}/${meta.id}/intermediate" }, mode: 'copy', pattern: '${meta.id}_frag_chunk_*.tsv')
+    publishDir({ "${params.outdir}/${meta.id}/intermediate" }, mode: 'copy', pattern: '*_frag_chunk_*.tsv')
 
     input:
     tuple val(meta), path(filtered_tblastn)
