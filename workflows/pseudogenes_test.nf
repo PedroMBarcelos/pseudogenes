@@ -56,14 +56,14 @@ workflow PSEUDOGENES_TEST {
 
     def min_evalue_ch
     if (params.min_evalue_file) {
-        min_evalue_ch = Channel.of(file(params.min_evalue_file))
+        min_evalue_ch = Channel.value(file(params.min_evalue_file))
     } else if (params.min_evalue_manual != null) {
         MAKE_MIN_EVALUE_FILE(Channel.value(params.min_evalue_manual))
-        min_evalue_ch = MAKE_MIN_EVALUE_FILE.out.min_evalue
+        min_evalue_ch = MAKE_MIN_EVALUE_FILE.out.min_evalue.first()
     } else if (params.run_null_model) {
         BLASTP_NULL_MODEL(PREPARE_UNIPROT_AND_SHUFFLE.out.uniprot_fasta, MAKEBLASTDB_PROT.out.db_prefix, MAKEBLASTDB_PROT.out.db_files)
         EXTRACT_MIN_EVALUE(BLASTP_NULL_MODEL.out.blastp_out)
-        min_evalue_ch = EXTRACT_MIN_EVALUE.out.min_evalue
+        min_evalue_ch = EXTRACT_MIN_EVALUE.out.min_evalue.first()
     } else {
         error "No threshold source configured. Set --min_evalue_file, --min_evalue_manual, or enable --run_null_model."
     }
@@ -79,7 +79,7 @@ workflow PSEUDOGENES_TEST {
             def fastaList = files("${dir}/*_genomic.fna")
             def fasta = fastaList instanceof Collection ? fastaList[0] : (fastaList.exists() ? fastaList : null)
             def gffList = files("${dir}/*.gff*")
-            def gffFile = gffList instanceof Collection ? gffList[0] : (gffList.exists() ? gffFile : null)
+            def gffFile = gffList instanceof Collection ? gffList[0] : (gffList.exists() ? gffList : null)
 
             int cdsCount = 0
             if (gffFile && gffFile.exists()) {
@@ -88,7 +88,7 @@ workflow PSEUDOGENES_TEST {
                     if (!line.startsWith("#")) {
                         def parts = line.tokenize('\t')
                         if (parts.size() > 2 && parts[2] == 'CDS') {
-                            cdsCount++
+                            cdsCount += 1
                         }
                     }
                 }
@@ -104,7 +104,7 @@ workflow PSEUDOGENES_TEST {
                 log.info "Skipping ${meta.id}: Low annotation quality (${meta.cds_count} CDS features)."
                 return false
             }
-            log.info "Keeping well-annotated genome ${meta.id} (${meta.cds_count} CDS features)."
+            // log.info "Keeping well-annotated genome ${meta.id} (${meta.cds_count} CDS features)."
             return true
         }
 
