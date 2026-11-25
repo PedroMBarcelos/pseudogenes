@@ -4,6 +4,7 @@ import sys
 import re
 from collections import defaultdict
 import argparse
+#from intervaltree import Interval, IntervalTree
 
 from utils import select_best_protein
 

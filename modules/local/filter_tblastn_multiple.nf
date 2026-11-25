@@ -1,18 +1,35 @@
 process FILTER_TBLASTN {
     tag { "${meta.id}" }
     label 'light'
-    publishDir({ "${params.outdir}/${meta.id}/intermediate" }, mode: 'copy', pattern: '*.filtered.out')
+
+    publishDir(
+        { "${params.outdir}/${meta.id}/intermediate" },
+        mode: 'copy',
+        pattern: '*.filtered.out'
+    )
 
     input:
-    tuple val(meta), path(tblastn_out)  // <-- Must be a tuple here!
-    path min_evalue
+    tuple val(meta), path(tblastn_out)
 
     output:
-    tuple val(meta), path("${meta.id}.tblastn.filtered.out"), emit: filtered_tblastn
+    tuple val(meta),
+          path("${meta.id}.tblastn.filtered.out"),
+          emit: filtered_tblastn
 
     script:
     """
-    threshold=\$(cat "${min_evalue}")
-    awk -v threshold="\${threshold}" '\$11 <= threshold' "${tblastn_out}" > ${meta.id}.tblastn.filtered.out
+    awk -v min_identity=20 \\
+        -v min_score=120 '
+        NF == 0 || /^#/ {next}
+
+        NF != 25 {
+            print "Unexpected TBLASTN field count: " NF > "/dev/stderr"
+            exit 2
+        }
+
+        (\$15 + 0) >= min_identity && (\$13 + 0) >= min_score {
+            print
+        }
+    ' "${tblastn_out}" > "${meta.id}.tblastn.filtered.out"
     """
 }

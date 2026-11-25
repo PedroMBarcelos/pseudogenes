@@ -18,7 +18,7 @@ process PREPARE_UNIPROT_AND_SHUFFLE {
       gzip -c "${uniprot_input}" > uniprot_input.fasta.gz
     fi
 
-    python3 "${projectDir}/Python_translation.py" uniprot_input.fasta.gz
+    python3 "${projectDir}/scripts/Python_translation.py" uniprot_input.fasta.gz
 
     gunzip -c uniprot_input.fasta.gz > uniprot_sprot.fasta
     cp uniprot_input.fasta.gz.shuffle uniprot_sprot.fasta.shuffle

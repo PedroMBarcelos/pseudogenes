@@ -11,18 +11,25 @@ process MAKEBLASTDB_NUCL {
     tuple val(meta), val("${meta.id}_db"), path("${meta.id}_db.*"), path("${meta.id}_genoma_cds_mascarado.fasta"), emit: db_bundle
 
     script:
+    def maskMode = params.mask_mode ?: 'protein_gene_preserve_pseudogene'
     def db_name = "${meta.id}_db"
     """
-    # 1. Extract CDS regions safely (ignoring comments and handling standard GFF3)
-    awk '\$1 !~ /^#/ && \$3 == "CDS" || \$3 == "gene" {print \$1 "\t" \$4-1 "\t" \$5}' "${gff_source}" > ${meta.id}_cds_regions.bed
-    
-    # 2. Check if BED file actually got features; fallback gracefully if empty
-    if [ ! -s ${meta.id}_cds_regions.bed ]; then
-        echo "Warning: No CDS features found in ${gff_source} for ${meta.id}!"
-    fi
+    # Masking implementation v1
+    python3 "${projectDir}/scripts/build_genome_mask.py" \
+        --fasta "${fasta}" \
+        --gff "${gff_source}" \
+        --mode "${maskMode}" \
+        --bed "${meta.id}_mask.bed" \
+        --report "${meta.id}_mask_summary.json"
 
-    # 3. Mask fasta
-    bedtools maskfasta -fi "${fasta}" -bed ${meta.id}_cds_regions.bed -fo ${meta.id}_genoma_cds_mascarado.fasta
+    if [ "${maskMode}" = "none" ] || [ ! -s "${meta.id}_mask.bed" ]; then
+        cp "${fasta}" "${meta.id}_genoma_cds_mascarado.fasta"
+    else
+        bedtools maskfasta \
+            -fi "${fasta}" \
+            -bed "${meta.id}_mask.bed" \
+            -fo "${meta.id}_genoma_cds_mascarado.fasta"
+    fi
 
     # 4. Build BLAST database
     "${params.blast_bin_dir}/makeblastdb" -in ${meta.id}_genoma_cds_mascarado.fasta -dbtype nucl -out ${db_name}

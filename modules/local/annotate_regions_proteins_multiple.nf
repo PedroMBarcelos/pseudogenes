@@ -1,19 +1,30 @@
 process ANNOTATE_REGIONS_WITH_BEST_PROTEINS {
     tag { "${meta.id}" }
-    label 'light'
-    publishDir({ "${params.outdir}/${meta.id}/annotations" }, mode: 'copy', pattern: '*.jsonl')
-    
+    label 'medium'
+
+    publishDir(
+        { "${params.outdir}/${meta.id}/analysis" },
+        mode: 'copy',
+        pattern: '*.region_annotations.jsonl'
+    )
+
     input:
-    tuple val(meta), path(regions_path), path(hsps_path)
-    
+    tuple val(meta),
+          path(analysis_report),
+          path(filtered_tblastn),
+          path(ssearch_results)
+
     output:
-    tuple val(meta), path("${meta.id}.region_annotations.jsonl"), emit: annotations
+    tuple val(meta),
+          path("${meta.id}.region_annotations.jsonl"),
+          emit: annotations
 
     script:
     """
-    python3 ${workflow.projectDir}/annotate_regions_with_best_proteins.py \
-        "${regions_path}" \
-        "${hsps_path}" \
-        "${meta.id}.region_annotations.jsonl"
+    python3 "${projectDir}/scripts/annotate_regions_with_best_proteins.py" \
+        --regions "${analysis_report}" \
+        --tblastn "${filtered_tblastn}" \
+        --ssearch "${ssearch_results}" \
+        --output "${meta.id}.region_annotations.jsonl"
     """
 }

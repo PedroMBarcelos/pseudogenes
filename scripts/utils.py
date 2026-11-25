@@ -95,9 +95,9 @@ def parse_merged_bed(merged_bed_path: Path) -> List[GenomicRegion]:
             parent_protein=str(row["ParentProtein"]),
             score_density=float(row["ScoreDensity"]),
             num_hsps=int(row["NumHSPs"]),
-            total_frameshifts=int(row["TotalFrameshifts"]),
-            internal_stops=int(row["InternalStops"]),
-            total_disablements=int(row["TotalDisablements"]),
+            total_frameshifts=optional_int(row["TotalFrameshifts"]),
+            internal_stops=optional_int(row["InternalStops"]),
+            total_disablements=optional_int(row["TotalDisablements"]),
         )
 
         regions.append(region)
@@ -143,3 +143,9 @@ def load_pseudogene_annotations_from_json(json_path: Path) -> List[PseudogeneAnn
                 d = json.loads(line)
                 annotations.append(PseudogeneAnnotation.from_dict(d))
     return annotations
+
+
+def optional_int(value):
+    if pd.isna(value):
+        return None
+    return int(value)

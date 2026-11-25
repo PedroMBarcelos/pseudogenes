@@ -11,7 +11,7 @@ process PSEUDOGENE_DETECTION {
 
     script:
     """
-    python3 ${workflow.projectDir}/pseudogene_detection.py \
+    python3 ${workflow.projectDir}/scripts/pseudogene_detection.py \
         "${region_annotations}" \
         "${genome_fasta}" \
         "${meta.id}.initial_pseudogene_annotations.jsonl"

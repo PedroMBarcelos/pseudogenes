@@ -13,7 +13,7 @@ process APPLY_FINAL_FILTERS {
 
     script:
     """
-    python3 ${workflow.projectDir}/apply_final_filters.py \
+    python3 ${workflow.projectDir}/scripts/apply_final_filters.py \
         "${pseudogene_annotations}" \
         "${min_coverage}" \
         "${final_min_identity}" \
