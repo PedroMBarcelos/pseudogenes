@@ -22,6 +22,7 @@ include { ANALYZE_REGIONS } from '../modules/local/analyze_regions_multiple'
 include { ANNOTATE_REGIONS_WITH_BEST_PROTEINS } from "../modules/local/annotate_regions_proteins_multiple"
 include { APPLY_FINAL_FILTERS } from "../modules/local/apply_final_filters_multiple"
 include { PSEUDOGENE_DETECTION } from "../modules/local/pseudogene_detection_multiple"
+include { DISRUPTION_ASSESSMENT } from "../modules/local/disruption_assessment_multiple"
 include { WRITE_FINAL_FILES } from "../modules/local/write_final_files_multiple"
 
 workflow PSEUDOGENES_TEST {
@@ -228,8 +229,39 @@ workflow PSEUDOGENES_TEST {
 
     PSEUDOGENE_DETECTION(pseudogene_input_ch)
 
-    // Generate final output files per genome
-    WRITE_FINAL_FILES(PSEUDOGENE_DETECTION.out.pseudogenes)
+    // Join by assembly ID, retaining the candidate metadata and unmasked FASTA.
+    def disruption_input_ch = PSEUDOGENE_DETECTION.out.pseudogenes
+        .map { meta, jsonl -> tuple(meta.id, meta, jsonl) }
+        .join(original_genome_ch.map { meta, fasta -> tuple(meta.id, fasta) },
+              failOnDuplicate: true, failOnMismatch: true)
+        .map { id, meta, jsonl, fasta -> tuple(meta, jsonl, fasta) }
+
+    // A reusable value channel is essential for multiple assemblies.
+    // The existing uniprot channel may contain a singleton list of paths.
+    def tfasty_reference_ch = uniprot_ch.map { ref ->
+        if (ref instanceof Collection) {
+            if (ref.size() != 1) {
+                error "TFASTY requires exactly one reference FASTA; found ${ref.size()}"
+            }
+            return ref[0]
+        }
+        return ref
+    }.first()
+
+    DISRUPTION_ASSESSMENT(
+        disruption_input_ch,
+        tfasty_reference_ch,
+        Channel.value(file("${projectDir}/scripts/disruption_assessment_tfasty_v3_workflow.py", checkIfExists: true)),
+        Channel.value(file(params.tfasty_executable, checkIfExists: true)),
+        Channel.value(params.tfasty_flank_window as Integer),
+        Channel.value(params.tfasty_timeout as Integer)
+    )
+
+    // Generate final output files per genome, including TFASTY metrics.
+    WRITE_FINAL_FILES(
+        DISRUPTION_ASSESSMENT.out.pseudogenes,
+        Channel.value(file("${projectDir}/scripts/write_final_files_tfasty.py", checkIfExists: true))
+    )
 
     emit:
     report = ANALYZE_REGIONS.out.final_report

@@ -3,10 +3,11 @@ process WRITE_FINAL_FILES {
     label 'light'
 
     publishDir "${params.outdir}/${meta.id}/final",
-        mode: 'copy'
+        mode: 'copy', overwrite: true
 
     input:
     tuple val(meta), path(annotations_jsonl)
+    path exporter_script
 
     output:
     tuple val(meta),
@@ -15,7 +16,7 @@ process WRITE_FINAL_FILES {
 
     script:
     """
-    python3 "${projectDir}/scripts/write_final_files.py" \\
+    python3 "${exporter_script}" \\
         "${annotations_jsonl}" \\
         "${meta.id}.candidate_regions.tsv"
     """
